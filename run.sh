@@ -15,6 +15,14 @@
 
 set -euo pipefail
 
+# ─── API Key Check ───────────────────────────────────────────────
+if [[ -z "${BOBSHELL_API_KEY:-}" ]]; then
+  echo "❌ BOBSHELL_API_KEY not set."
+  echo "   export BOBSHELL_API_KEY=<your-key>"
+  echo "   Or set it in ~/.bob/settings.json"
+  exit 1
+fi
+
 # ─── Configuration ───────────────────────────────────────────────
 MAX_ITERATIONS=0          # 0 = unlimited
 MAX_COINS=50              # per-iteration Bob coin cap
