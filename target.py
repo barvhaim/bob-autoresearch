@@ -4,15 +4,10 @@ target.py — Snake AI Strategy (Agent Optimizes This)
 The agent modifies this file to improve the snake's performance.
 The function `decide(state) -> Direction` is called each step.
 
-Current implementation: Random walk (intentionally terrible baseline).
+Current implementation: Greedy chase toward food with basic safety.
 """
 
-import random
 from snake_engine import Direction, Point
-
-
-# Initialize with a fixed seed for reproducibility within a game
-_rng = random.Random(123)
 
 
 def decide(state: dict) -> Direction:
@@ -32,6 +27,69 @@ def decide(state: dict) -> Direction:
     Returns:
         Direction — one of Direction.UP, DOWN, LEFT, RIGHT
     """
-    # === TERRIBLE BASELINE: Random direction ===
-    # The agent should replace this with something smart.
-    return _rng.choice([Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT])
+    head = state["head"]
+    food = state["food"]
+    snake = state["snake"]
+    width = state["width"]
+    height = state["height"]
+    
+    # Calculate direction preferences based on food position
+    dx = food.x - head.x
+    dy = food.y - head.y
+    
+    # Prioritize directions that move toward food
+    moves = []
+    
+    if dx > 0:
+        moves.append((abs(dx), Direction.RIGHT))
+    elif dx < 0:
+        moves.append((abs(dx), Direction.LEFT))
+    
+    if dy > 0:
+        moves.append((abs(dy), Direction.DOWN))
+    elif dy < 0:
+        moves.append((abs(dy), Direction.UP))
+    
+    # Sort by distance (prioritize larger distance first)
+    moves.sort(reverse=True, key=lambda x: x[0])
+    
+    # Try each move in order of preference
+    for _, direction in moves:
+        next_pos = get_next_position(head, direction)
+        if is_safe(next_pos, snake, width, height):
+            return direction
+    
+    # If no food-directed move is safe, try any safe move
+    for direction in [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]:
+        next_pos = get_next_position(head, direction)
+        if is_safe(next_pos, snake, width, height):
+            return direction
+    
+    # No safe move found, return any direction (will likely die)
+    return Direction.UP
+
+
+def get_next_position(pos: Point, direction: Direction) -> Point:
+    """Calculate the next position given current position and direction."""
+    if direction == Direction.UP:
+        return Point(pos.x, pos.y - 1)
+    elif direction == Direction.DOWN:
+        return Point(pos.x, pos.y + 1)
+    elif direction == Direction.LEFT:
+        return Point(pos.x - 1, pos.y)
+    elif direction == Direction.RIGHT:
+        return Point(pos.x + 1, pos.y)
+    return pos
+
+
+def is_safe(pos: Point, snake: list, width: int, height: int) -> bool:
+    """Check if a position is safe (not wall, not body)."""
+    # Check walls
+    if pos.x < 0 or pos.x >= width or pos.y < 0 or pos.y >= height:
+        return False
+    
+    # Check body collision (exclude tail since it will move)
+    if pos in snake[:-1]:
+        return False
+    
+    return True
