@@ -1,27 +1,37 @@
 """
-target.py — Sorting Algorithm (Agent Optimizes This)
+target.py — Snake AI Strategy (Agent Optimizes This)
 
-The agent modifies this file to improve sorting performance.
-DO NOT modify evaluate.py or program.md.
+The agent modifies this file to improve the snake's performance.
+The function `decide(state) -> Direction` is called each step.
 
-Current implementation: Bubble Sort (intentionally naive baseline).
+Current implementation: Random walk (intentionally terrible baseline).
 """
 
+import random
+from snake_engine import Direction, Point
 
-def sort_array(arr: list) -> list:
-    """Sort an array of integers in ascending order.
+
+# Initialize with a fixed seed for reproducibility within a game
+_rng = random.Random(123)
+
+
+def decide(state: dict) -> Direction:
+    """Decide the next move for the snake.
 
     Args:
-        arr: List of integers to sort.
+        state: dict with keys:
+            - head: Point(x, y) — snake's head position
+            - snake: list[Point] — all body segments (head first)
+            - food: Point(x, y) — current food position
+            - direction: Direction — current movement direction
+            - width: int — board width
+            - height: int — board height
+            - score: int — current score
+            - steps: int — steps taken so far
 
     Returns:
-        A new sorted list.
+        Direction — one of Direction.UP, DOWN, LEFT, RIGHT
     """
-    # Bubble Sort — O(n²) baseline. The agent should replace this.
-    result = arr.copy()
-    n = len(result)
-    for i in range(n):
-        for j in range(0, n - i - 1):
-            if result[j] > result[j + 1]:
-                result[j], result[j + 1] = result[j + 1], result[j]
-    return result
+    # === TERRIBLE BASELINE: Random direction ===
+    # The agent should replace this with something smart.
+    return _rng.choice([Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT])

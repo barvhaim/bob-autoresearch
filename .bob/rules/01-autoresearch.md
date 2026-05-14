@@ -1,33 +1,27 @@
-# Bob AutoResearch — Loop Rules
+# Bob AutoResearch — Loop Rules (Snake AI)
 
-You are running inside an **AutoResearch optimization loop**.
+You are optimizing a **Snake game AI** inside an AutoResearch loop.
 
 ## Critical Rules
 
-1. **Read `program.md` first** — it has all instructions
-2. **ONE iteration per invocation** — make one change, evaluate, commit or revert
-3. **Never modify `evaluate.py`** — it is immutable
+1. **Read `program.md` first** — it has all instructions and strategy ideas
+2. **ONE iteration per invocation** — one change, evaluate, commit or revert
+3. **Never modify `evaluate.py` or `snake_engine.py`** — they are immutable
 4. **Never modify `program.md`** — it is immutable
 5. **Always log to `results.tsv`** — TAB-separated, append only
-6. **Always commit before evaluating** — so you can revert cleanly
+6. **Commit before evaluating** — so you can revert cleanly
 7. **Revert failed experiments** — `git reset --hard HEAD~1`
-8. **Read `results.tsv`** before making changes — learn from past experiments
-9. **Prefer simplicity** — delete code for same performance = always a win
+8. **Read `results.tsv` first** — learn from past experiments, don't repeat failures
 
-## Git Workflow
+## Strategy Progression
 
-```bash
-# After modifying target.py:
-git add -A && git commit -m "experiment: <description>"
+Start simple, build up:
+- Random → Greedy → BFS → A* → Hamilton → Hybrid
 
-# After evaluation:
-# If improved → keep (commit stays)
-# If not improved → git reset --hard HEAD~1
-```
+Don't jump to the most complex approach first. Each iteration should be
+an incremental improvement over the current code.
 
-## Common Mistakes to Avoid
+## Import Rules
 
-- Don't forget to revert on failure
-- Don't use external packages not in stdlib
-- Don't modify the function signature in target.py
-- Don't skip logging to results.tsv
+Only use: `snake_engine`, `random`, `collections`, `heapq`, `math`
+No external packages!
