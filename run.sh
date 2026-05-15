@@ -77,7 +77,7 @@ echo ""
 
 if $DRY_RUN; then
   echo "🏜️  DRY RUN — would execute:"
-  echo "  bob -y --chat-mode=$CHAT_MODE --max-coins $MAX_COINS $BOB_FLAGS \"<prompt>\""
+  echo "  bob -y --auth-method api-key --chat-mode=$CHAT_MODE --max-coins $MAX_COINS $BOB_FLAGS \"<prompt>\""
   exit 0
 fi
 
@@ -106,6 +106,7 @@ while true; do
   echo "  ═══════════════════════════════════════════════════"
 
   bob -y \
+    --auth-method api-key \
     --chat-mode="$CHAT_MODE" \
     --max-coins "$MAX_COINS" \
     --hide-intermediary-output \
