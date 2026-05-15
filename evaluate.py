@@ -1,85 +1,143 @@
 """
-evaluate.py — Immutable Evaluator (DO NOT MODIFY)
+evaluate.py — Snake AI Evaluator (DO NOT MODIFY)
 
-Measures sorting performance across multiple array sizes.
-Outputs a single scalar metric: total time in seconds.
+Runs multiple games with different seeds and computes average score.
+The metric is average food eaten (higher = better).
 
 Usage:
     python evaluate.py
+    python evaluate.py --replay     # show ASCII replay of best game
+    python evaluate.py --gif        # generate GIF of best game (requires pillow)
 """
 
-import random
-import time
 import sys
+import time
+from snake_engine import SnakeGame, Direction
 
-# Fixed seed for reproducibility across all runs
-RANDOM_SEED = 42
-TEST_SIZES = [100, 1_000, 5_000, 10_000]
-REPEATS = 3  # average over N repeats for stability
-
-
-def generate_test_data(size: int, seed: int) -> list:
-    """Generate a reproducible random array."""
-    rng = random.Random(seed)
-    return [rng.randint(-1_000_000, 1_000_000) for _ in range(size)]
+# === Evaluation Config ===
+NUM_GAMES = 10
+BOARD_SIZE = 20
+SEEDS = list(range(100, 100 + NUM_GAMES))  # deterministic seeds
+MAX_STEPS_PER_FOOD = 200  # max steps without eating before we call it "stuck"
 
 
-def verify_sorted(original: list, result: list) -> bool:
-    """Verify the result is correctly sorted."""
-    if len(result) != len(original):
-        return False
-    if sorted(original) != result:
-        return False
-    return True
+def run_game(seed: int, verbose: bool = False) -> dict:
+    """Run one game and return stats."""
+    game = SnakeGame(width=BOARD_SIZE, height=BOARD_SIZE, seed=seed)
+
+    try:
+        from target import decide
+    except ImportError as e:
+        return {"score": 0, "steps": 0, "error": str(e)}
+    except SyntaxError as e:
+        return {"score": 0, "steps": 0, "error": f"SyntaxError: {e}"}
+
+    last_score = 0
+    steps_since_food = 0
+    frames = []
+
+    while not game.game_over:
+        state = game.get_state()
+
+        try:
+            action = decide(state)
+        except Exception as e:
+            if verbose:
+                print(f"  AI error: {e}")
+            break
+
+        # Validate return type
+        if not isinstance(action, Direction):
+            if verbose:
+                print(f"  AI returned non-Direction: {action}")
+            break
+
+        alive, score = game.step(action)
+
+        # Track stuck detection
+        if score > last_score:
+            steps_since_food = 0
+            last_score = score
+        else:
+            steps_since_food += 1
+
+        if steps_since_food > MAX_STEPS_PER_FOOD:
+            if verbose:
+                print(f"  Stuck! No food for {MAX_STEPS_PER_FOOD} steps.")
+            break
+
+        if verbose:
+            frames.append(game.render())
+
+    return {
+        "score": game.score,
+        "steps": game.steps,
+        "error": None,
+        "frames": frames if verbose else [],
+    }
 
 
 def main():
-    # Import the target function
-    try:
-        from target import sort_array
-    except ImportError as e:
-        print(f"error: could not import sort_array from target.py: {e}")
-        sys.exit(1)
-    except SyntaxError as e:
-        print(f"error: syntax error in target.py: {e}")
-        sys.exit(1)
-
-    total_time = 0.0
-    all_correct = True
+    replay_mode = "--replay" in sys.argv
+    verbose = replay_mode
 
     print("=" * 60)
-    print("AutoResearch Evaluator — Sorting Benchmark")
+    print("AutoResearch Evaluator — Snake AI Benchmark")
+    print(f"Games: {NUM_GAMES} | Board: {BOARD_SIZE}x{BOARD_SIZE} | Seeds: {SEEDS[0]}-{SEEDS[-1]}")
     print("=" * 60)
 
-    for size in TEST_SIZES:
-        times = []
-        for repeat in range(REPEATS):
-            seed = RANDOM_SEED + repeat
-            data = generate_test_data(size, seed)
+    results = []
+    best_game = None
+    best_score = -1
 
-            start = time.perf_counter()
-            result = sort_array(data)
-            elapsed = time.perf_counter() - start
-            times.append(elapsed)
+    start_time = time.perf_counter()
 
-            # Verify correctness
-            if not verify_sorted(data, result):
-                print(f"FAIL: sort_array returned incorrect result for size={size}")
-                all_correct = False
+    for seed in SEEDS:
+        result = run_game(seed, verbose=verbose)
+        results.append(result)
 
-        avg_time = sum(times) / len(times)
-        total_time += avg_time
-        print(f"  size={size:>6,}  avg={avg_time:.6f}s  (runs: {[f'{t:.6f}' for t in times]})")
+        status = "OK" if not result["error"] else f"ERR: {result['error']}"
+        print(f"  seed={seed}  score={result['score']:>3}  steps={result['steps']:>5}  {status}")
+
+        if result["score"] > best_score:
+            best_score = result["score"]
+            best_game = result
+
+    elapsed = time.perf_counter() - start_time
+
+    # Compute metrics
+    scores = [r["score"] for r in results]
+    avg_score = sum(scores) / len(scores)
+    max_score = max(scores)
+    min_score = min(scores)
+    errors = sum(1 for r in results if r["error"])
 
     print("=" * 60)
+    print(f"  avg_score: {avg_score:.2f}")
+    print(f"  max_score: {max_score}")
+    print(f"  min_score: {min_score}")
+    print(f"  errors: {errors}/{NUM_GAMES}")
+    print(f"  time: {elapsed:.2f}s")
+    print("=" * 60)
 
-    if not all_correct:
-        print("status: FAIL (incorrect results)")
-        print("score: 999999.0")
+    if errors == NUM_GAMES:
+        print("status: FAIL (all games errored)")
+        print("score: 0.0")
         sys.exit(1)
 
-    print(f"score: {total_time:.6f}")
+    # Final score: average food eaten across all games
+    print(f"score: {avg_score:.2f}")
     print("status: OK")
+
+    # Replay best game
+    if replay_mode and best_game and best_game.get("frames"):
+        print(f"\n🎮 Replay of best game (score={best_score}):")
+        print("-" * 40)
+        # Show last 5 frames
+        frames = best_game["frames"]
+        for frame in frames[-5:]:
+            print(frame)
+            print()
 
 
 if __name__ == "__main__":
