@@ -18,9 +18,8 @@ Each iteration takes ~1-2 minutes. You can watch the score climb in real-time.
 ## Quick Start
 
 ```bash
-git clone https://github.com/njs2017/bob-autoresearch
+git clone https://github.com/barvhaim/bob-autoresearch
 cd bob-autoresearch
-git checkout demo/snake-ai
 
 # See the terrible baseline
 python evaluate.py
