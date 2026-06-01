@@ -67,7 +67,17 @@ python replay.py --seed 100
 | `snake_engine.py` | Game logic | Nobody |
 | `replay.py` | ASCII visualization for demo | Nobody |
 | `run.sh` | Loop wrapper | Nobody |
-| `results.tsv` | Experiment log | Bob (append) |
+| `results.tsv` | Experiment log (gitignored — survives `git reset`) | Bob (append) |
+
+## Resetting Between Demos
+
+The repo is tagged `demo-start` at the random baseline. To rewind after a run:
+
+```bash
+git reset --hard demo-start
+printf "commit\tscore\tstatus\tdescription\n" > results.tsv
+python evaluate.py    # baseline ~0.10
+```
 
 ## Demo Tips
 
