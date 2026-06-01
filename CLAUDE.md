@@ -40,7 +40,7 @@ This contract is load-bearing for the demo. Violating it breaks the loop's invar
 | `evaluate.py`, `snake_engine.py` | Harness — game rules and scoring | **Nobody during a run.** Treat as immutable. |
 | `program.md` | The English-language spec Bob reads each iteration | Human only, rarely |
 | `.bob/rules/*.md` | Bob's project rules (loaded by the `bob` CLI) | Human only |
-| `results.tsv` | Append-only experiment ledger (TAB-separated: `commit  score  status  description`) | Bob (append) |
+| `results.tsv` | Append-only experiment ledger (TAB-separated: `commit  score  status  description`). Gitignored — survives `git reset --hard` so discard rows persist. | Bob (append) |
 | `run.sh` | Outer loop wrapper around the `bob` CLI | Human only |
 | `replay.py`, `visual_replay.py` | Demo visualization | Human only |
 
@@ -79,11 +79,11 @@ Two consequences worth remembering:
 
 ## Resetting for a demo
 
-The demo starts from the random baseline. After a run, restore the baseline before the next one:
+The demo starts from the random baseline, marked by the `demo-start` tag. After a run, restore the baseline before the next one:
 
 ```bash
-git checkout target.py             # if the random baseline is the committed version
-# clear results.tsv to just its header line:
+git reset --hard demo-start        # rewinds target.py and drops experiment commits
+# results.tsv is gitignored, so reset it manually to just its header line:
 printf "commit\tscore\tstatus\tdescription\n" > results.tsv
 git status                         # must be clean before starting
 python evaluate.py                 # baseline should be ~0.10
